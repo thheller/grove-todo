@@ -24,7 +24,9 @@
 
   (local/init! env/rt-ref)
 
-  (history/init! env/rt-ref {:use-fragment true :start-token "/all"})
+  (history/init! env/rt-ref
+    {:use-fragment true
+     :start-token "/all"})
 
   (render))
 
