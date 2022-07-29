@@ -1,7 +1,7 @@
 (ns todo.ui.env
   (:require
+    [shadow.grove :as sg]
     [shadow.grove.db :as db]
-    [shadow.grove.runtime :as rt]
     [todo.model :as-alias m]))
 
 (def schema
@@ -20,5 +20,5 @@
 
 (defonce rt-ref
   (-> {}
-      (rt/prepare data-ref ::db)))
+      (sg/prepare data-ref ::db)))
 
