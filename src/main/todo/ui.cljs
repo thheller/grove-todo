@@ -1,7 +1,6 @@
 (ns todo.ui
   (:require
     [shadow.grove :as sg]
-    [shadow.grove.local :as local]
     [shadow.grove.history :as history]
     [todo.ui.env :as env]
     [todo.ui.views :as views]
@@ -21,8 +20,6 @@
       (fn [{:keys [event] :as report}]
         ;; alternatively use tap> and the shadow-cljs UI
         (js/console.log (:e event) event report))))
-
-  (local/init! env/rt-ref)
 
   (history/init! env/rt-ref
     {:use-fragment true

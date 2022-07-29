@@ -1,8 +1,8 @@
 (ns todo.ui.db
   (:require
     [shadow.grove.eql-query :as eql]
-    [shadow.grove.events :as ev]
     [shadow.grove.db :as db]
+    [shadow.grove :as sg]
     [todo.ui.env :as env]
     [todo.model :as-alias m]
     ))
@@ -50,7 +50,7 @@
 (defn r-> [init rfn coll]
   (reduce rfn init coll))
 
-(ev/reg-event env/rt-ref :ui/route!
+(sg/reg-event env/rt-ref :ui/route!
   (fn [env {:keys [token] :as e}]
 
     ;; not much routing in this app, this will suffice
@@ -62,7 +62,7 @@
 
       (assoc-in env [:db ::m/current-filter] filter))))
 
-(ev/reg-event env/rt-ref ::m/create-new!
+(sg/reg-event env/rt-ref ::m/create-new!
   (fn [env {::m/keys [todo-text]}]
     (update env :db
       (fn [db]
@@ -72,7 +72,7 @@
                 (update ::m/id-seq inc)
                 (db/add ::m/todo new-todo [::m/todos]))))))))
 
-(ev/reg-event env/rt-ref ::m/delete!
+(sg/reg-event env/rt-ref ::m/delete!
   (fn [env {:keys [todo]}]
     (update env :db
       (fn [db]
@@ -80,15 +80,15 @@
             (dissoc todo)
             (update ::m/todos without todo))))))
 
-(ev/reg-event env/rt-ref ::m/toggle-completed!
+(sg/reg-event env/rt-ref ::m/toggle-completed!
   (fn [env {:keys [todo]}]
     (update-in env [:db todo ::m/completed?] not)))
 
-(ev/reg-event env/rt-ref ::m/edit-start!
+(sg/reg-event env/rt-ref ::m/edit-start!
   (fn [env {:keys [todo]}]
     (assoc-in env [:db ::m/editing] todo)))
 
-(ev/reg-event env/rt-ref ::m/edit-save!
+(sg/reg-event env/rt-ref ::m/edit-save!
   (fn [env {:keys [todo text]}]
     (update env :db
       (fn [db]
@@ -96,11 +96,11 @@
             (assoc-in [todo ::m/todo-text] text)
             (assoc ::m/editing nil))))))
 
-(ev/reg-event env/rt-ref ::m/edit-cancel!
+(sg/reg-event env/rt-ref ::m/edit-cancel!
   (fn [env _]
     (assoc-in env [:db ::m/editing] nil)))
 
-(ev/reg-event env/rt-ref ::m/clear-completed!
+(sg/reg-event env/rt-ref ::m/clear-completed!
   (fn [env _]
     (update env :db
       (fn [db]
@@ -115,7 +115,7 @@
                                 (into [] (remove #(get-in db [% ::m/completed?])) current))))
         ))))
 
-(ev/reg-event env/rt-ref ::m/toggle-all!
+(sg/reg-event env/rt-ref ::m/toggle-all!
   (fn [env {:keys [completed?]}]
     (update env :db
       (fn [db]
