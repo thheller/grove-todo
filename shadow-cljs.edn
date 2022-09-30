@@ -15,4 +15,4 @@
   {:target :browser
    :output-dir "public/js"
    :modules {:main {:init-fn todo.ui/init
-                    :preloadsx [shadow.grove.dev-support]}}}}}
+                    :preloads [shadow.grove.dev-support]}}}}}
