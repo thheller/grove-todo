@@ -16,7 +16,7 @@
 (defn init []
   ;; useful for debugging until there are actual tools for this
   (when ^boolean js/goog.DEBUG
-    (swap! env/rt-ref assoc :shadow.grove.events/tx-reporter
+    (swap! env/rt-ref assoc :shadow.grove.runtime/tx-reporter
       (fn [{:keys [event] :as report}]
         ;; alternatively use tap> and the shadow-cljs UI
         (js/console.log (:e event) event report))))

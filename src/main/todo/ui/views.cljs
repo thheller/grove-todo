@@ -13,14 +13,15 @@
       ;; default do nothing
       nil))
 
-  (event ::m/edit-complete! [env {:keys [todo]} e]
-    (sg/run-tx env {:e ::m/edit-save! :todo todo :text (.. e -target -value)}))
-
   (bind {::m/keys [completed? editing? todo-text] :as data}
     (sg/query-ident todo
       [::m/todo-text
        ::m/editing?
        ::m/completed?]))
+
+  (event ::m/edit-complete! [env {:keys [todo]} e]
+    (when editing? ;; don't save after escape/cancel
+      (sg/run-tx env {:e ::m/edit-save! :todo todo :text (.. e -target -value)})))
 
   (render
     (<< [:li {:class {:completed completed?
