@@ -4,13 +4,11 @@ A TodoMVC implementation using [shadow-grove](https://github.com/thheller/shadow
 
 # Build Instructions
 
-Click the "Use this template" link above or clone this repo.
-
-Afterwards change into the proper directory and run
+Clone the repo and run
 
 ```
 npm install
-npx shadow-cljs watch ui
+npx shadow-cljs run repl/start
 ```
 
 Once the build completes open http://localhost:3000.
