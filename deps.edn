@@ -1,0 +1,30 @@
+{:paths
+ ["src/dev"
+  "src/main"
+  "src/test"]
+
+ :deps
+ {com.thheller/shadow-grove {:mvn/version "1.0.0"}}
+
+ :aliases
+ {:dev
+  {:extra-deps
+   {thheller/shadow-cljs {:mvn/version "2.28.7"}}}
+
+  ;; if you want some grove/css features not in any release
+  ;; you can make local git clones, or use :git/url deps here
+  ;; THIS IS OPTIONAL AND PROPER RELEASES ARE RECOMMENDED
+  :local-dev
+  {:override-deps
+   {com.thheller/shadow-grove {:local/root "../shadow-grove"}
+    com.thheller/shadow-css {:local/root "../shadow-css"}}}
+
+  ;; command to start without the npm package
+  :start
+  {:main-opts ["-m" "shadow.cljs.devtools.cli" "run" "repl/start"]}
+
+  :release
+  {:main-opts ["-m" "shadow.cljs.devtools.cli" "run" "build/all"]}
+
+
+  }}

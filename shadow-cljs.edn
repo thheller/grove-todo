@@ -1,18 +1,12 @@
 ;; shadow-cljs configuration
-{:source-paths
- ["src/dev"
-  "src/main"
-  "src/test"]
-
- :dependencies
- [[com.thheller/shadow-grove "0.4.2"]]
+{:deps {:aliases [:dev]}
 
  :dev-http
  {3000 "public"}
 
  :builds
- {:ui
+ {:app
   {:target :browser
    :output-dir "public/js"
    :modules {:main {:init-fn todo.ui/init
-                    :preloads [shadow.grove.dev-support]}}}}}
+                    :preloads [shadow.grove.preload]}}}}}

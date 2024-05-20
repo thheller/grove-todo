@@ -3,25 +3,12 @@
     [shadow.grove :as sg :refer (<< defc)]
     [todo.model :as-alias m]))
 
-(defc todo-item [todo]
-  (event ::m/edit-update! [env {:keys [todo]} e]
-    (case (.-which e)
-      13 ;; enter
-      (.. e -target (blur))
-      27 ;; escape
-      (sg/run-tx env {:e ::m/edit-cancel! :todo todo})
-      ;; default do nothing
-      nil))
+(defc todo-item [todo-id]
+  (bind {::m/keys [completed? todo-text] :as data}
+    (sg/kv-lookup ::m/todo todo-id))
 
-  (bind {::m/keys [completed? editing? todo-text] :as data}
-    (sg/query-ident todo
-      [::m/todo-text
-       ::m/editing?
-       ::m/completed?]))
-
-  (event ::m/edit-complete! [env {:keys [todo]} e]
-    (when editing? ;; don't save after escape/cancel
-      (sg/run-tx env {:e ::m/edit-save! :todo todo :text (.. e -target -value)})))
+  (bind editing?
+    (= todo-id (sg/kv-lookup ::m/ui ::m/editing)))
 
   (render
     (<< [:li {:class {:completed completed?
@@ -29,23 +16,34 @@
          [:div.view
           [:input.toggle {:type "checkbox"
                           :checked completed?
-                          :on-change {:e ::m/toggle-completed! :todo todo}}]
-          [:label {:on-dblclick {:e ::m/edit-start! :todo todo}} todo-text]
-          [:button.destroy {:on-click {:e ::m/delete! :todo todo}}]]
+                          :on-change {:e ::m/toggle-completed! :todo-id todo-id}}]
+          [:label {:on-dblclick {:e ::m/edit-start! :todo-id todo-id}} todo-text]
+          [:button.destroy {:on-click {:e ::m/delete! :todo-id todo-id}}]]
 
          (when editing?
            (<< [:input#edit.edit {:autofocus true
-                                  :on-keydown {:e ::m/edit-update! :todo todo}
-                                  :on-blur {:e ::m/edit-complete! :todo todo}
-                                  :value todo-text}]))])))
+                                  :on-keydown {:e ::m/edit-update! :todo-id todo-id}
+                                  :on-blur {:e ::m/edit-complete! :todo-id todo-id}
+                                  :value todo-text}]))]))
+
+  (event ::m/edit-complete! [env {:keys [todo-id]} e]
+    (when editing? ;; don't save after escape/cancel
+      (sg/run-tx env {:e ::m/edit-save! :todo-id todo-id :text (.. e -target -value)})))
+
+  (event ::m/edit-update! [env {:keys [todo-id]} e]
+    (case (.-which e)
+      13 ;; enter
+      (.. e -target (blur))
+      27 ;; escape
+      (sg/run-tx env {:e ::m/edit-cancel! :todo-id todo-id})
+      ;; default do nothing
+      nil)))
 
 (defc ui-filter-select []
-  (bind {::m/keys [current-filter]}
-    (sg/query-root
-      [::m/current-filter]))
+  (bind current-filter
+    (sg/kv-lookup ::m/ui ::m/current-filter))
 
-  (bind
-    filter-options
+  (bind filter-options
     [{:label "All" :value :all}
      {:label "Active" :value :active}
      {:label "Completed" :value :completed}])
@@ -59,33 +57,35 @@
                         :ui/href (str "/" (name value))}
                        label]])))])))
 
-(defc ui-todo-list []
-  (bind {::m/keys [filtered-todos] :as query}
-    (sg/query-root
-      [::m/filtered-todos]))
+(defn ?todo-stats [{::m/keys [todo] :as env}]
+  (let [current-filter
+        (get-in env [::m/ui ::m/current-filter])
 
-  (render
-    (<< [:ul.todo-list (sg/keyed-seq filtered-todos identity todo-item)])))
+        filter-fn
+        (case current-filter
+          :all
+          (fn [x] true)
+          :active
+          #(not (::m/completed? %))
+          :completed
+          #(true? (::m/completed? %)))]
+
+    (reduce
+      (fn [m {::m/keys [completed?] :as todo}]
+        (-> m
+            (update (if completed? :num-completed :num-active) inc)
+            (cond->
+              (filter-fn todo)
+              (update :todos conj (::m/todo-id todo)))))
+      {:num-total (count todo)
+       :num-active 0
+       :num-completed 0
+       :todos []}
+      (vals todo))))
 
 (defc ui-root []
-  (event ::m/create-new! [env _ ^js e]
-    (when (= 13 (.-keyCode e))
-      (let [input (.-target e)
-            text (.-value input)]
-
-        (when (seq text)
-          (set! input -value "") ;; FIXME: this triggers a paint so should probably be delayed?
-          (sg/run-tx env {:e ::m/create-new! ::m/todo-text text})))))
-
-  (event ::m/toggle-all! [env _ e]
-    (sg/run-tx env {:e ::m/toggle-all! :completed? (-> e .-target .-checked)}))
-
-  (bind {::m/keys [num-total num-active num-completed] :as query}
-    (sg/query-root
-      [::m/editing
-       ::m/num-total
-       ::m/num-active
-       ::m/num-completed]))
+  (bind {:keys [num-total num-active num-completed todos] :as query}
+    (sg/query ?todo-stats))
 
   (render
     (<< [:header.header
@@ -102,7 +102,8 @@
                  :checked false}]
                [:label {:for "toggle-all"} "Mark all as complete"]
 
-               (ui-todo-list)
+               [:ul.todo-list
+                (sg/keyed-seq todos identity todo-item)]
 
                [:footer.footer
                 [:span.todo-count
@@ -111,4 +112,16 @@
                 (ui-filter-select)
 
                 (when (pos? num-completed)
-                  (<< [:button.clear-completed {:on-click {:e ::m/clear-completed!}} "Clear completed"]))]])))))
+                  (<< [:button.clear-completed {:on-click {:e ::m/clear-completed!}} "Clear completed"]))]]))))
+
+  (event ::m/create-new! [env _ ^js e]
+    (when (= 13 (.-keyCode e))
+      (let [input (.-target e)
+            text (.-value input)]
+
+        (when (seq text)
+          (set! input -value "") ;; FIXME: this triggers a paint so should probably be delayed?
+          (sg/run-tx env {:e ::m/create-new! ::m/todo-text text})))))
+
+  (event ::m/toggle-all! [env _ e]
+    (sg/run-tx env {:e ::m/toggle-all! :completed? (-> e .-target .-checked)})))

@@ -2,26 +2,30 @@
   (:require
     [shadow.grove :as sg]
     [shadow.grove.history :as history]
-    [todo.ui.env :as env]
+    [todo.model :as-alias m]
     [todo.ui.views :as views]
     [todo.ui.db]))
+
+(defonce rt-ref
+  (sg/get-runtime :app))
 
 (defonce root-el
   (js/document.getElementById "app"))
 
 (defn render []
-  (sg/render env/rt-ref root-el
+  (sg/render rt-ref root-el
     (views/ui-root)))
 
 (defn init []
-  ;; useful for debugging until there are actual tools for this
-  (when ^boolean js/goog.DEBUG
-    (swap! env/rt-ref assoc :shadow.grove.runtime/tx-reporter
-      (fn [{:keys [event] :as report}]
-        ;; alternatively use tap> and the shadow-cljs UI
-        (js/console.log (:e event) event report))))
+  (sg/add-kv-table rt-ref ::m/ui
+    {}
+    {::m/editing nil})
 
-  (history/init! env/rt-ref
+  (sg/add-kv-table rt-ref ::m/todo
+    {:primary-key ::m/todo-id}
+    {})
+
+  (history/init! rt-ref
     {:use-fragment true
      :start-token "/all"})
 
