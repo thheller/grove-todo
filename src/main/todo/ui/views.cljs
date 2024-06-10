@@ -81,7 +81,9 @@
        :num-active 0
        :num-completed 0
        :todos []}
-      (vals todo))))
+      ;; sorting here to things are processed in order
+      ;; and not the order used by the (potential) hash map
+      (sort (vals todo)))))
 
 (defc ui-root []
   (bind {:keys [num-total num-active num-completed todos] :as query}
