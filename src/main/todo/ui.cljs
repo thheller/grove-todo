@@ -23,7 +23,7 @@
 
   (sg/add-kv-table rt-ref ::m/todo
     {:primary-key ::m/todo-id}
-    {})
+    (sorted-map-by >))
 
   (history/init! rt-ref
     {:use-fragment true
