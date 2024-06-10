@@ -70,20 +70,20 @@
           :completed
           #(true? (::m/completed? %)))]
 
-    (reduce
-      (fn [m {::m/keys [completed?] :as todo}]
-        (-> m
-            (update (if completed? :num-completed :num-active) inc)
-            (cond->
-              (filter-fn todo)
-              (update :todos conj (::m/todo-id todo)))))
-      {:num-total (count todo)
-       :num-active 0
-       :num-completed 0
-       :todos []}
-      ;; sorting here to things are processed in order
-      ;; and not the order used by the (potential) hash map
-      (sort (vals todo)))))
+    (->> todo
+         (vals)
+         (sort-by ::m/todo-id)
+         (reduce
+           (fn [m {::m/keys [completed?] :as todo}]
+             (-> m
+                 (update (if completed? :num-completed :num-active) inc)
+                 (cond->
+                   (filter-fn todo)
+                   (update :todos conj (::m/todo-id todo)))))
+           {:num-total (count todo)
+            :num-active 0
+            :num-completed 0
+            :todos []}))))
 
 (defc ui-root []
   (bind {:keys [num-total num-active num-completed todos] :as query}
